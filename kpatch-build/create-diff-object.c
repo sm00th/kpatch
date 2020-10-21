@@ -341,7 +341,7 @@ static int is_special_static(struct symbol *sym)
 		sym = sym->sec->sym;
 	}
 
-	if (sym->type != STT_OBJECT || sym->bind != STB_LOCAL)
+	if (sym->type != STT_OBJECT)
 		return 0;
 
 	for (prefix = prefixes; *prefix; prefix++)
