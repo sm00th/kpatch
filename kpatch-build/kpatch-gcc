@@ -49,7 +49,7 @@ if [[ "$TOOLCHAINCMD" =~ "gcc" ]] ; then
 					;;
 				*.o)
 					mkdir -p "$KPATCH_GCC_TEMPDIR/orig/$(dirname "$relobj")"
-					#[[ -e "$obj" ]] && cp -f "$obj" "$KPATCH_GCC_TEMPDIR/orig/$relobj"
+					[[ -e "$obj" ]] && cp -f "$obj" "$KPATCH_GCC_TEMPDIR/orig/$relobj"
 					#echo "$relobj" >> "$KPATCH_GCC_TEMPDIR/changed_objs"
 					break
 					;;
