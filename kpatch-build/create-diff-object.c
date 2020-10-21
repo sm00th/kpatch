@@ -1019,6 +1019,7 @@ static void kpatch_compare_elf_headers(Elf *elf1, Elf *elf2)
 		DIFF_FATAL("ELF headers differ");
 }
 
+/*
 static void kpatch_check_program_headers(Elf *elf)
 {
 	size_t ph_nr;
@@ -1029,6 +1030,7 @@ static void kpatch_check_program_headers(Elf *elf)
 	if (ph_nr != 0)
 		DIFF_FATAL("ELF contains program header");
 }
+*/
 
 static void kpatch_mark_grouped_sections(struct kpatch_elf *kelf)
 {
@@ -3671,8 +3673,8 @@ int main(int argc, char *argv[])
 	kelf_patched = kpatch_elf_open(patched_obj);
 
 	kpatch_compare_elf_headers(kelf_base->elf, kelf_patched->elf);
-	kpatch_check_program_headers(kelf_base->elf);
-	kpatch_check_program_headers(kelf_patched->elf);
+	//kpatch_check_program_headers(kelf_base->elf);
+	//kpatch_check_program_headers(kelf_patched->elf);
 
 	kpatch_bundle_symbols(kelf_base);
 	kpatch_bundle_symbols(kelf_patched);
