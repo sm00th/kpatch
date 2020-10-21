@@ -53,6 +53,18 @@ if [[ "$TOOLCHAINCMD" =~ "gcc" ]] ; then
 					#echo "$relobj" >> "$KPATCH_GCC_TEMPDIR/changed_objs"
 					break
 					;;
+				vmlinux)
+					# LDFINAL uses scrits/gcc-ld
+					cp -f "$obj" "$KPATCH_GCC_TEMPDIR/orig/$relobj"
+					echo "$relobj" >> "$KPATCH_GCC_TEMPDIR/changed_objs"
+					break
+					;;
+				*.ko)
+					mkdir -p "$KPATCH_GCC_TEMPDIR/module/$(dirname "$relobj")"
+					cp -f "$obj" "$KPATCH_GCC_TEMPDIR/orig/$relobj"
+					echo "$relobj" >> "$KPATCH_GCC_TEMPDIR/changed_objs"
+					break
+					;;
 				*)
 					break
 					;;
