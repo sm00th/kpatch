@@ -413,6 +413,7 @@ find_kobj() {
 				arch/x86/kernel/head*.o|\
 				arch/x86/kernel/ebda.o|\
 				arch/x86/kernel/platform-quirks.o|\
+				vmlinux|\
 				lib/lib.a)
 					KOBJFILE=vmlinux
 					return
