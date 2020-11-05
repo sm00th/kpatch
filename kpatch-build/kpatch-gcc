@@ -61,6 +61,7 @@ if [[ "$TOOLCHAINCMD" =~ "gcc" ]] ; then
 					;;
 				*.ko)
 					mkdir -p "$KPATCH_GCC_TEMPDIR/module/$(dirname "$relobj")"
+					cp -f "$obj" "$KPATCH_GCC_TEMPDIR/module/$relobj"
 					cp -f "$obj" "$KPATCH_GCC_TEMPDIR/orig/$relobj"
 					echo "$relobj" >> "$KPATCH_GCC_TEMPDIR/changed_objs"
 					break
@@ -80,6 +81,7 @@ elif [[ "$TOOLCHAINCMD" = "ld" ]] ; then
 			case "$obj" in
 				*.ko)
 					mkdir -p "$KPATCH_GCC_TEMPDIR/module/$(dirname "$relobj")"
+					cp -f "$obj" "$KPATCH_GCC_TEMPDIR/module/$relobj"
 					cp -f "$obj" "$KPATCH_GCC_TEMPDIR/orig/$relobj"
 					echo "$relobj" >> "$KPATCH_GCC_TEMPDIR/changed_objs"
 					break
