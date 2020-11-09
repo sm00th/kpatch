@@ -946,7 +946,7 @@ for i in $FILES; do
 		#		     Module.symvers patch-mod-name output.o
 		"$TOOLSDIR"/create-diff-object $CDO_FLAGS "orig/$i" "patched/$i" "$KOBJFILE_NAME" \
 			"$SYMTAB" "$SYMVERS_FILE" "${MODNAME//-/_}" \
-			"output/$i" 2>&1 | logger 1
+			"output/$i.o" 2>&1 | logger 1
 		check_pipe_status create-diff-object
 		# create-diff-object returns 3 if no functional change is found
 		[[ "$rc" -eq 0 ]] || [[ "$rc" -eq 3 ]] || ERROR="$((ERROR + 1))"
@@ -956,7 +956,7 @@ for i in $FILES; do
 			objnames[${#objnames[@]}]="$KOBJFILE"
 		fi
 	else
-		cp -f "patched/$i" "output/$i"
+		cp -f "patched/$i" "output/$i.o"
 		objnames[${#objnames[@]}]="$KOBJFILE"
 	fi
 done
