@@ -928,6 +928,9 @@ static void kpatch_correlate_sections(struct list_head *seclist1, struct list_he
 			    sec2->twin)
 				continue;
 
+			if (sec1->sh.sh_type == SHT_NOTE)
+				continue;
+
 			if (is_special_static(is_rela_section(sec1) ?
 					      sec1->base->secsym :
 					      sec1->secsym))
@@ -988,6 +991,9 @@ static void kpatch_correlate_symbols(struct list_head *symlist1, struct list_hea
 			if (sym1->sec &&
 			    sym1->sec->sh.sh_type == SHT_GROUP &&
 			    sym1->sec->twin != sym2->sec)
+				continue;
+
+			if (sym1->sec && sym1->sec->sh.sh_type == SHT_NOTE)
 				continue;
 
 			kpatch_correlate_symbol(sym1, sym2);
