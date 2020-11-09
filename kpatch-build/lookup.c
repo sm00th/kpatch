@@ -430,7 +430,7 @@ static bool lookup_local_symbol(struct lookup_table *table, char *name,
 			continue;
 
 		if (sym->type == STT_FILE)
-			break;
+			continue;
 
 		if (sym->bind == STB_LOCAL && !strcmp(sym->name, name)) {
 
