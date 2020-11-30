@@ -19,8 +19,7 @@ struct sym_compare_type {
 };
 
 struct lookup_table *lookup_open(char *symtab_path, char *objname,
-				 char *symvers_path, char *hint,
-				 struct sym_compare_type *locals);
+				 char *symvers_path, struct sym_compare_type *locals);
 void lookup_close(struct lookup_table *table);
 bool lookup_symbol(struct lookup_table *table, char *name,
 		   struct lookup_result *result);

@@ -3651,8 +3651,7 @@ int main(int argc, char *argv[])
 	int num_changed, callbacks_exist, new_globals_exist;
 	struct lookup_table *lookup;
 	struct section *sec, *symtab;
-	struct symbol *sym;
-	char *hint = NULL, *orig_obj, *patched_obj, *parent_name;
+	char *orig_obj, *patched_obj, *parent_name;
 	char *parent_symtab, *mod_symvers, *patch_name, *output_obj;
 	struct sym_compare_type *base_locals, *sym_comp;
 
@@ -3688,21 +3687,9 @@ int main(int argc, char *argv[])
 	kpatch_detect_child_functions(kelf_base);
 	kpatch_detect_child_functions(kelf_patched);
 
-	list_for_each_entry(sym, &kelf_base->symbols, list) {
-		if (sym->type == STT_FILE) {
-			hint = strdup(sym->name);
-			break;
-		}
-	}
-	if (!hint) {
-		log_normal("WARNING: FILE symbol not found in base. Stripped object file or assembly source?\n");
-		return EXIT_STATUS_NO_CHANGE;
-	}
-
 	base_locals = kpatch_elf_locals(kelf_base);
 
-	lookup = lookup_open(parent_symtab, parent_name, mod_symvers, hint,
-			     base_locals);
+	lookup = lookup_open(parent_symtab, parent_name, mod_symvers, base_locals);
 
 	kpatch_mark_grouped_sections(kelf_patched);
 	kpatch_replace_sections_syms(kelf_base);
@@ -3743,7 +3730,6 @@ int main(int argc, char *argv[])
 			log_debug("no changed functions were found, but callbacks exist\n");
 		else {
 			log_debug("no changed functions were found\n");
-			free(hint);
 			return EXIT_STATUS_NO_CHANGE;
 		}
 	}
@@ -3762,7 +3748,6 @@ int main(int argc, char *argv[])
 	for (sym_comp = base_locals; sym_comp && sym_comp->name; sym_comp++)
 		free(sym_comp->name);
 	free(base_locals);
-	free(hint);
 
 	kpatch_no_sibling_calls_ppc64le(kelf_out);
 

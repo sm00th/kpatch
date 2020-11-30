@@ -152,7 +152,7 @@ static int locals_match(struct lookup_table *table, int idx,
 	return 1;
 }
 
-static void find_local_syms(struct lookup_table *table, char *hint,
+static void find_local_syms(struct lookup_table *table,
 			    struct sym_compare_type *child_locals)
 {
 	struct object_symbol *sym;
@@ -164,20 +164,18 @@ static void find_local_syms(struct lookup_table *table, char *hint,
 	for_each_obj_symbol(i, sym, table) {
 		if (sym->type != STT_FILE)
 			continue;
-		if (strcmp(hint, sym->name))
-			continue;
 		if (!locals_match(table, i, child_locals))
 			continue;
 		if (table->local_syms)
-			ERROR("found duplicate matches for %s local symbols in %s symbol table",
-			      hint, table->objname);
+			ERROR("found duplicate matches for local symbols in %s symbol table",
+			      table->objname);
 
 		table->local_syms = sym;
 	}
 
 	if (!table->local_syms)
-		ERROR("couldn't find matching %s local symbols in %s symbol table",
-		      hint, table->objname);
+		ERROR("couldn't find matching local symbols in '%s' symbol table",
+		      table->objname);
 }
 
 /* Strip the path and replace '-' with '_' */
@@ -370,8 +368,7 @@ static void symvers_read(struct lookup_table *table, char *path)
 }
 
 struct lookup_table *lookup_open(char *symtab_path, char *objname,
-				 char *symvers_path, char *hint,
-				 struct sym_compare_type *locals)
+				 char *symvers_path, struct sym_compare_type *locals)
 {
 	struct lookup_table *table;
 
@@ -383,7 +380,7 @@ struct lookup_table *lookup_open(char *symtab_path, char *objname,
 	table->objname = objname;
 	symtab_read(table, symtab_path);
 	symvers_read(table, symvers_path);
-	find_local_syms(table, hint, locals);
+	find_local_syms(table, locals);
 
 	return table;
 }
