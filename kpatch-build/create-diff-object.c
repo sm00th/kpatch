@@ -1724,10 +1724,7 @@ static void kpatch_include_standard_elements(struct kpatch_elf *kelf)
 		if (!strcmp(sec->name, ".shstrtab") ||
 		    !strcmp(sec->name, ".strtab") ||
 		    !strcmp(sec->name, ".symtab") ||
-		    !strcmp(sec->name, ".toc") ||
-		    !strcmp(sec->name, ".rodata") ||
-		    (!strncmp(sec->name, ".rodata.", 8) &&
-		     strstr(sec->name, ".str1."))) {
+		    !strcmp(sec->name, ".toc")) {
 			kpatch_include_section(sec);
 		}
 	}
