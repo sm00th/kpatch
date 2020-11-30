@@ -99,8 +99,8 @@ static int locals_match(struct lookup_table *table, int idx,
 
 	i = idx + 1;
 	for_each_obj_symbol_continue(i, sym, table) {
-		/*if (sym->type == STT_FILE)
-			break;*/
+		if (sym->type == STT_FILE)
+			continue;
 		if (sym->bind != STB_LOCAL)
 			continue;
 		if (sym->type != STT_FUNC && sym->type != STT_OBJECT)
@@ -130,8 +130,8 @@ static int locals_match(struct lookup_table *table, int idx,
 		found = 0;
 		i = idx + 1;
 		for_each_obj_symbol_continue(i, sym, table) {
-			/*if (sym->type == STT_FILE)
-				break;*/
+			if (sym->type == STT_FILE)
+				continue;
 			if (sym->bind != STB_LOCAL)
 				continue;
 			if (sym->type != STT_FUNC && sym->type != STT_OBJECT)
