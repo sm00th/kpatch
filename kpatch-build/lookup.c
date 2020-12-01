@@ -90,15 +90,14 @@ static int maybe_discarded_sym(const char *name)
 	return 0;
 }
 
-static int locals_match(struct lookup_table *table, int idx,
+static int locals_match(struct lookup_table *table,
 			struct sym_compare_type *child_locals)
 {
 	struct sym_compare_type *child;
 	struct object_symbol *sym;
 	int i, found;
 
-	i = idx + 1;
-	for_each_obj_symbol_continue(i, sym, table) {
+	for_each_obj_symbol(i, sym, table) {
 		if (sym->type == STT_FILE)
 			continue;
 		if (sym->bind != STB_LOCAL)
@@ -128,8 +127,7 @@ static int locals_match(struct lookup_table *table, int idx,
 			continue;
 
 		found = 0;
-		i = idx + 1;
-		for_each_obj_symbol_continue(i, sym, table) {
+		for_each_obj_symbol(i, sym, table) {
 			if (sym->type == STT_FILE)
 				continue;
 			if (sym->bind != STB_LOCAL)
@@ -155,27 +153,15 @@ static int locals_match(struct lookup_table *table, int idx,
 static void find_local_syms(struct lookup_table *table,
 			    struct sym_compare_type *child_locals)
 {
-	struct object_symbol *sym;
-	int i;
-
 	if (!child_locals)
 		return;
 
-	for_each_obj_symbol(i, sym, table) {
-		if (sym->type != STT_FILE)
-			continue;
-		if (!locals_match(table, i, child_locals))
-			continue;
-		if (table->local_syms)
-			ERROR("found duplicate matches for local symbols in %s symbol table",
-			      table->objname);
-
-		table->local_syms = sym;
-	}
-
-	if (!table->local_syms)
+	if (!locals_match(table, child_locals))
 		ERROR("couldn't find matching local symbols in '%s' symbol table",
 		      table->objname);
+
+	/* TODO: probably should drop this var and check globals as well */
+	table->local_syms = table->obj_syms;
 }
 
 /* Strip the path and replace '-' with '_' */
