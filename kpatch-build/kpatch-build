@@ -49,11 +49,12 @@ LOGFILE="$CACHEDIR/build.log"
 RELEASE_FILE=/etc/os-release
 DEBUG=0
 SKIPCLEANUP=0
-SKIPGCCCHECK=0
+SKIPCOMPILERCHECK=0
 ARCH_KCFLAGS=""
 DEBUG_KCFLAGS=""
 declare -a PATCH_LIST
 APPLIED_PATCHES=0
+USE_CLANG=0
 OOT_MODULE=
 
 warn() {
@@ -251,7 +252,35 @@ gcc_version_check() {
 		warn "gcc/kernel version mismatch"
 		echo "gcc version:    $gccver"
 		echo "kernel version: $kgccver"
-		echo "Install the matching gcc version (recommended) or use --skip-gcc-check"
+		echo "Install the matching gcc version (recommended) or use --skip-compiler-check"
+		echo "to skip the version matching enforcement (not recommended)"
+		return 1
+	fi
+
+	return
+}
+
+clang_version_from_file() {
+	readelf -p .comment "$1" | grep -Eo 'clang version [0-9.]+' | head -n 1
+}
+
+clang_version_check() {
+	local clangver kclangver
+
+	clangver=$(clang --version | grep -Eo 'clang version [0-9.]+' | head -n 1)
+	if [[ -n "$OOT_MODULE" ]]; then
+		kclangver="$(clang_version_from_file "$OOT_MODULE")"
+	else
+		kclangver="$(clang_version_from_file "$VMLINUX")"
+	fi
+
+
+	# ensure clang version matches that used to build the l
+	if [[ "$clangver" != "$kclangver" ]]; then
+		warn "clang/kernel version mismatch"
+		echo "clang version:    $clangver"
+		echo "kernel version: $kclangver"
+		echo "Install the matching clang version (recommended) or use --skip-compiler-check"
 		echo "to skip the version matching enforcement (not recommended)"
 		return 1
 	fi
@@ -406,6 +435,7 @@ find_kobj() {
 		[[ -n "$PARENT" ]] && DEEP_FIND=0
 		if [[ -z "$PARENT" ]]; then
 			[[ "$KOBJFILE" = *.ko ]] && return
+			[[ "$KOBJFILE" = vmlinux.o ]] && return
 			case "$KOBJFILE" in
 				*/built-in.o|\
 				*/built-in.a|\
@@ -453,11 +483,12 @@ usage() {
 	echo "		-e, --oot-module   Enable patching out-of-tree module," >&2
 	echo "		                   specify current version of module" >&2
 	echo "		--skip-cleanup     Skip post-build cleanup" >&2
-	echo "		--skip-gcc-check   Skip gcc version matching check" >&2
+	echo "		--skip-compiler-check   Skip gcc version matching check" >&2
+	echo "		--clang   	   Use clang" >&2
 	echo "		                   (not recommended)" >&2
 }
 
-options="$(getopt -o ha:r:s:c:v:j:t:n:o:de: -l "help,archversion:,sourcerpm:,sourcedir:,config:,vmlinux:,jobs:,target:,name:,output:,oot-module:,debug,skip-gcc-check,skip-cleanup" -- "$@")" || die "getopt failed"
+options="$(getopt -o ha:r:s:c:v:j:t:n:o:de: -l "help,archversion:,sourcerpm:,sourcedir:,config:,vmlinux:,jobs:,target:,name:,output:,oot-module:,debug,skip-compiler-check,skip-cleanup,clang" -- "$@")" || die "getopt failed"
 
 eval set -- "$options"
 
@@ -524,9 +555,14 @@ while [[ $# -gt 0 ]]; do
 		echo "Skipping cleanup"
 		SKIPCLEANUP=1
 		;;
-	--skip-gcc-check)
+	--skip-compiler-check)
 		echo "WARNING: Skipping gcc version matching check (not recommended)"
-		SKIPGCCCHECK=1
+		SKIPCOMPILERCHECK=1
+		;;
+	--clang)
+		USE_CLANG=1
+		#export CC="$TOOLSDIR/kpatch-gcc clang"
+		#export LD="$TOOLSDIR/kpatch-gcc ld.lld"
 		;;
 	*)
 		[[ "$1" = "--" ]] && shift && continue
@@ -628,8 +664,12 @@ fi
 
 find_dirs || die "can't find supporting tools"
 
-if [[ "$SKIPGCCCHECK" -eq 0 ]]; then
-	gcc_version_check || die
+if [[ "$SKIPCOMPILERCHECK" -eq 0 ]]; then
+	if [[ "$USE_CLANG" -eq 0 ]]; then
+		gcc_version_check || die
+	else
+		clang_version_check || die
+	fi
 fi
 
 if [[ -n "$USERSRCDIR" ]]; then
@@ -805,7 +845,22 @@ echo "Building original source"
 unset KPATCH_GCC_TEMPDIR
 # $TARGETS used as list, no quotes.
 # shellcheck disable=SC2086
-CROSS_COMPILE="$TOOLSDIR/kpatch-gcc " make "-j$CPUS" $TARGETS 2>&1 | logger || die
+if [ "$USE_CLANG" -eq 0 ]; then
+	CROSS_COMPILE="$TOOLSDIR/kpatch-gcc " make "-j$CPUS" $TARGETS 2>&1 | logger || die
+else
+	# TODO: check which ones we actually need
+	make \
+		CC="$TOOLSDIR/kpatch-gcc clang" \
+		LD="$TOOLSDIR/kpatch-gcc ld.lld" \
+		AR="llvm-ar" \
+		NM="llvm-nm" \
+		OBJCOPY="llvm-objcopy" \
+		OBJDUMP="llvm-objdump" \
+		READELF="llvm-readelf" \
+		OBJSIZE="llvm-size" \
+		STRIP="llvm-strip" \
+		"-j$CPUS" $TARGETS 2>&1 | logger || die
+fi
 
 # Save original module symvers
 cp "$SRCDIR/Module.symvers" "$TEMPDIR/Module.symvers"
@@ -819,9 +874,23 @@ KPATCH_GCC_SRCDIR="$SRCDIR"
 export KPATCH_GCC_SRCDIR
 # $TARGETS used as list, no quotes.
 # shellcheck disable=SC2086
-CROSS_COMPILE="$TOOLSDIR/kpatch-gcc " \
-	KBUILD_MODPOST_WARN=1 \
-	make "-j$CPUS" $TARGETS 2>&1 | logger || die
+if [ "$USE_CLANG" -eq 0 ]; then
+	CROSS_COMPILE="$TOOLSDIR/kpatch-gcc " \
+		KBUILD_MODPOST_WARN=1 \
+		make "-j$CPUS" $TARGETS 2>&1 | logger || die
+else
+	KBUILD_MODPOST_WARN=1 make \
+		CC="$TOOLSDIR/kpatch-gcc clang" \
+		LD="$TOOLSDIR/kpatch-gcc ld.lld" \
+		AR="llvm-ar" \
+		NM="llvm-nm" \
+		OBJCOPY="llvm-objcopy" \
+		OBJDUMP="llvm-objdump" \
+		READELF="llvm-readelf" \
+		OBJSIZE="llvm-size" \
+		STRIP="llvm-strip" \
+		"-j$CPUS" $TARGETS 2>&1 | logger || die
+fi
 
 # source.c:(.section+0xFF): undefined reference to `symbol'
 grep "undefined reference" "$LOGFILE" | sed -r "s/^.*\`(.*)'$/\\1/" \
@@ -921,6 +990,11 @@ for i in $FILES; do
 		if [[ "$(basename "$KOBJFILE")" = vmlinux ]]; then
 			KOBJFILE_NAME=vmlinux
 			KOBJFILE_PATH="$VMLINUX"
+			SYMTAB="${TEMPDIR}/${KOBJFILE_NAME}.symtab"
+			SYMVERS_FILE="$SRCDIR/Module.symvers"
+		elif [[ "$(basename "$KOBJFILE")" = vmlinux.o ]]; then
+			KOBJFILE_NAME=vmlinux
+			KOBJFILE_PATH="$SRCDIR/$KOBJFILE"
 			SYMTAB="${TEMPDIR}/${KOBJFILE_NAME}.symtab"
 			SYMVERS_FILE="$SRCDIR/Module.symvers"
 		elif [[ "$(basename "$KOBJFILE")" = "$(basename "$OOT_MODULE")" ]]; then

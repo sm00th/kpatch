@@ -13,7 +13,7 @@ fi
 
 declare -a args=("$@")
 
-if [[ "$TOOLCHAINCMD" =~ "gcc" ]] ; then
+if [[ "$TOOLCHAINCMD" =~ "gcc" || "$TOOLCHAINCMD" =~ "clang" ]] ; then
 	while [ "$#" -gt 0 ]; do
 		if [ "$1" = "-o" ]; then
 			obj="$2"
@@ -28,7 +28,6 @@ if [[ "$TOOLCHAINCMD" =~ "gcc" ]] ; then
 				*.mod.o|\
 				*built-in.o|\
 				*built-in.a|\
-				vmlinux.o|\
 				.tmp_kallsyms1.o|\
 				.tmp_kallsyms2.o|\
 				init/version.o|\
@@ -47,16 +46,16 @@ if [[ "$TOOLCHAINCMD" =~ "gcc" ]] ; then
 				*/.lib_exports.o)
 					break
 					;;
+				vmlinux.o)
+					# LDFINAL uses scrits/gcc-ld
+					cp -f "$obj" "$KPATCH_GCC_TEMPDIR/orig/$relobj"
+					echo "$relobj" >> "$KPATCH_GCC_TEMPDIR/changed_objs"
+					break
+					;;
 				*.o)
 					mkdir -p "$KPATCH_GCC_TEMPDIR/orig/$(dirname "$relobj")"
 					[[ -e "$obj" ]] && cp -f "$obj" "$KPATCH_GCC_TEMPDIR/orig/$relobj"
 					#echo "$relobj" >> "$KPATCH_GCC_TEMPDIR/changed_objs"
-					break
-					;;
-				vmlinux)
-					# LDFINAL uses scrits/gcc-ld
-					cp -f "$obj" "$KPATCH_GCC_TEMPDIR/orig/$relobj"
-					echo "$relobj" >> "$KPATCH_GCC_TEMPDIR/changed_objs"
 					break
 					;;
 				*.ko)
@@ -73,7 +72,8 @@ if [[ "$TOOLCHAINCMD" =~ "gcc" ]] ; then
 		fi
 		shift
 	done
-elif [[ "$TOOLCHAINCMD" = "ld" ]] ; then
+elif [[ "$TOOLCHAINCMD" = "ld" || "$TOOLCHAINCMD" = "lld" || \
+		"$TOOLCHAINCMD" = "ld.lld" ]] ; then
 	while [ "$#" -gt 0 ]; do
 		if [ "$1" = "-o" ]; then
 			obj="$2"
@@ -90,7 +90,7 @@ elif [[ "$TOOLCHAINCMD" = "ld" ]] ; then
 					args+=(--warn-unresolved-symbols)
 					break
 					;;
-				vmlinux)
+				vmlinux.o)
 					args+=(--warn-unresolved-symbols)
 					cp -f "$obj" "$KPATCH_GCC_TEMPDIR/orig/$relobj"
 					echo "$relobj" >> "$KPATCH_GCC_TEMPDIR/changed_objs"
