@@ -561,8 +561,6 @@ while [[ $# -gt 0 ]]; do
 		;;
 	--clang)
 		USE_CLANG=1
-		#export CC="$TOOLSDIR/kpatch-gcc clang"
-		#export LD="$TOOLSDIR/kpatch-gcc ld.lld"
 		;;
 	*)
 		[[ "$1" = "--" ]] && shift && continue
@@ -1087,6 +1085,11 @@ if [[ -z "$OOT_MODULE" ]]; then
 else
 	KPATCH_BUILD="/lib/modules/$ARCHVERSION/build"
 fi
+
+if [ "$USE_CLANG" -eq 1 ]; then
+  export LLVM=1
+fi
+
 KPATCH_BUILD="$KPATCH_BUILD" KPATCH_NAME="$MODNAME" \
 KBUILD_EXTRA_SYMBOLS="$KBUILD_EXTRA_SYMBOLS" \
 KPATCH_LDFLAGS="$KPATCH_LDFLAGS" \
