@@ -188,7 +188,7 @@ void kpatch_create_rela_list(struct kpatch_elf *kelf, struct section *sec)
 		rela->addend = rela->rela.r_addend;
 		rela->offset = (unsigned int)rela->rela.r_offset;
 		symndx = (unsigned int)GELF_R_SYM(rela->rela.r_info);
-		rela->sym = find_symbol_by_index(&kelf->symbols, symndx);
+		rela->sym = kelf->symidx[symndx];
 		if (!rela->sym)
 			ERROR("could not find rela entry symbol\n");
 		if (rela->sym->sec &&
@@ -271,6 +271,7 @@ void kpatch_create_symbol_list(struct kpatch_elf *kelf)
 		ERROR("missing symbol table");
 
 	symbols_nr = (unsigned int)(symtab->sh.sh_size / symtab->sh.sh_entsize);
+	kelf->symidx = malloc(symbols_nr * sizeof(struct symbol*));
 
 	log_debug("\n=== symbol list (%d entries) ===\n", symbols_nr);
 
@@ -279,6 +280,7 @@ void kpatch_create_symbol_list(struct kpatch_elf *kelf)
 
 		INIT_LIST_HEAD(&sym->children);
 
+		kelf->symidx[index] = sym;
 		sym->index = index;
 		if (!gelf_getsym(symtab->data, index, &sym->sym))
 			ERROR("gelf_getsym");
@@ -382,6 +384,8 @@ struct kpatch_elf *kpatch_elf_open(const char *name)
 		INIT_LIST_HEAD(&sec->relas);
 		kpatch_create_rela_list(kelf, sec);
 	}
+
+	free(kelf->symidx);
 
 	kpatch_find_func_profiling_calls(kelf);
 	return kelf;
