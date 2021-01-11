@@ -676,6 +676,7 @@ if [[ -n "$USERSRCDIR" ]]; then
 	# save original vmlinux before it gets overwritten by sourcedir build
 	if [[ -z "$OOT_MODULE" ]] && [[ "$VMLINUX" -ef "$SRCDIR"/vmlinux ]]; then
 		cp -f "$VMLINUX" "$TEMPDIR/vmlinux"
+		cp -f "$VMLINUX.o" "$TEMPDIR/vmlinux.o"
 		VMLINUX="$TEMPDIR/vmlinux"
 	fi
 
@@ -992,7 +993,7 @@ for i in $FILES; do
 			SYMVERS_FILE="$SRCDIR/Module.symvers"
 		elif [[ "$(basename "$KOBJFILE")" = vmlinux.o ]]; then
 			KOBJFILE_NAME=vmlinux
-			KOBJFILE_PATH="$SRCDIR/$KOBJFILE"
+			KOBJFILE_PATH="$VMLINUX.o"
 			SYMTAB="${TEMPDIR}/${KOBJFILE_NAME}.symtab"
 			SYMVERS_FILE="$SRCDIR/Module.symvers"
 		elif [[ "$(basename "$KOBJFILE")" = "$(basename "$OOT_MODULE")" ]]; then
