@@ -1089,6 +1089,11 @@ fi
 
 if [ "$USE_CLANG" -eq 1 ]; then
   export LLVM=1
+
+  # with clang lto objtool tires to generate orc_unwind and mcount_loc on a
+  # later step which conflicts with same sections created by kpatch-build, so
+  # skip it
+  export SKIP_STACK_VALIDATION=1
 fi
 
 KPATCH_BUILD="$KPATCH_BUILD" KPATCH_NAME="$MODNAME" \
