@@ -108,6 +108,7 @@ struct kpatch_elf {
 	struct list_head symbols;
 	struct list_head strings;
 	struct symbol **symidx;
+	Elf_Data *symtab_shndx;
 	int fd;
 };
 
